@@ -12,50 +12,130 @@ std::ostream& operator<<(std::ostream& stream, const Position& vertex)
     return stream;
 }
 
-class Attractor {
+class Attractor : public sf::Drawable {
 public:
-    std::vector<sf::Vertex> vertices;
-    float dt = 0.001f;
-    float a = 10;
+    std::vector<std::vector<sf::Vertex>> verticeList;
+    float dt = 0.01f;
+    float a = 5;
     float b = 28;
     float c = 8.0f / 3.0f;
 
+    enum Type {
+        Lorenz = 0, FixedPoint
+    };
+
 private:
-    Position c_pos = { 0.01f, 0.0f, 0.0f };
+    std::vector<Position> c_positions;
     float center_x, center_y;
     float time = 0.0f;
-    
+    Type attractor_type;
+    sf::RenderWindow window;
+
 public:
-    Attractor(int _center_x, int _center_y) {
+    Attractor(Type _type, int _center_x, int _center_y, int numLines) {
         center_x = (float)_center_x;
         center_y = (float)_center_y;
+        attractor_type = _type;
+        for (int i = 0; i < numLines; i++) {
+            if (_type == Type::FixedPoint) {
+                if (i % 2 == 0)
+                    c_positions.push_back({ 100.0f, 200.0f + i * 5, 0.0f });
+                else
+                    c_positions.push_back({ -100.0f, -200.0f - (i - 1) * 5, 0.0f });
+            }
+            else if (_type == Type::Lorenz) {
+                c_positions.push_back({ 0.01f + (i * 2.0f), 0.0f, 0.0f + (i * 5.0f) });
+            }
+            
+            verticeList.push_back({});
+        }
     }
 
     void update() {
-        // Update our position
-        float dx = (a * (c_pos.y - c_pos.x)) * dt;
-        float dy = (c_pos.x * (b - c_pos.z) - c_pos.y) * dt;
-        float dz = ((c_pos.x * c_pos.y) - (c * c_pos.z)) * dt;
-    
-        c_pos.x += dx;
-        c_pos.y += dy;
-        c_pos.z += dz;
+        
+        if (verticeList[0].size() > 100) {
+            for (int i = 0; i < verticeList.size(); i++) {
+                verticeList[i].erase(verticeList[i].begin(), verticeList[i].begin() + 1);
+            }
+        }
+        
+        switch (attractor_type)
+        {
+            case Type::Lorenz:
+                update_lorenz();
+                break;
+            case Type::FixedPoint:
+                update_fixed_point();
+                break;
+            default:
+                break;
+        }
+    }
 
-        time += dt;
+protected:
+    void draw(sf::RenderTarget& target, sf::RenderStates state) const
+    {
+        for (std::vector<sf::Vertex> vertices : verticeList){
+            target.draw(&vertices[0], vertices.size(), sf::LineStrip);
+        }
+    }
 
-        std::cout << "(" << c_pos << ") Time: " << time << std::endl;
+private:
+    void update_lorenz() {
+        // Messing around with changing a value.
+        a += 0.001;
+        std::cout << a << std::endl;
+        for (int i = 0; i < c_positions.size(); i++) {
+            // Update our position
+            float dx = (a * (c_positions[i].y - c_positions[i].x)) * dt;
+            float dy = (c_positions[i].x * (b - c_positions[i].z) - c_positions[i].y) * dt;
+            float dz = ((c_positions[i].x * c_positions[i].y) - (c * c_positions[i].z)) * dt;
 
-        // Update the array
-        float x_pos = center_x - c_pos.x * 9.0f;
-        float y_pos = center_y - c_pos.z * 7.0f;
-        vertices.push_back(sf::Vertex(sf::Vector2f(x_pos, y_pos), sf::Color(x_pos/600 * 255, 100, 150)));
+            c_positions[i].x += dx;
+            c_positions[i].y += dy;
+            c_positions[i].z += dz;
+
+            time += dt;
+
+            // std::cout << "(" << c_positions[i] << ") Time: " << time << std::endl;
+
+            // Update the array
+            float x_pos = center_x - c_positions[i].x * 9.0f;
+            float z_pos = center_y - c_positions[i].z * 7.0f;
+            verticeList[i].push_back(sf::Vertex(sf::Vector2f(x_pos, z_pos), sf::Color(x_pos / 600 * 255, i * (255/c_positions.size()), 150)));
+        }
+    }
+
+    void update_fixed_point() {
+        for (int i = 0; i < c_positions.size(); i++) {
+            float fixed_a = 0.1f;
+            float fixed_b = 0.4f;
+
+            // Update our position
+            float dx = (-c_positions[i].y - fixed_a * c_positions[i].y) * dt;
+            float dy = (c_positions[i].x - fixed_b * c_positions[i].y) * dt;
+
+            c_positions[i].x += dx;
+            c_positions[i].y += dy;
+
+            time += dt;
+
+            // std::cout << "(" << c_pos << ") Time: " << time << std::endl;
+
+            // Update the arry
+            float x_pos = center_x - c_positions[i].x * 1.f;
+            float y_pos = center_y - c_positions[i].y * 1.f;
+            verticeList[i].push_back(sf::Vertex(sf::Vector2f(x_pos, y_pos), sf::Color(x_pos / 600 * 255, i*(255 / c_positions.size()), i * (255 / c_positions.size()))));
+        }
     }
 };
 
 int main()
 {   
     sf::RenderWindow window(sf::VideoMode(600, 600), "Lorenz Attractor");
-    Attractor lorenz(300, 500);
+    Attractor lorenz(Attractor::Type::Lorenz, 300, 500, 20);
+
+    window.setFramerateLimit(60);
 
     while (window.isOpen())
     {
@@ -68,7 +148,7 @@ int main()
 
         window.clear();
         lorenz.update();
-        window.draw(&lorenz.vertices[0], lorenz.vertices.size(), sf::LineStrip);
+        window.draw(lorenz);
         window.display();
     }
 
