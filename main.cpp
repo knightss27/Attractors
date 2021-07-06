@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 struct Position {
     float x, y, z;
@@ -27,7 +29,7 @@ public:
 private:
     std::vector<Position> c_positions;
     float center_x, center_y;
-    float time = 0.0f;
+    float c_time = 0.0f;
     Type attractor_type;
     sf::RenderWindow window;
 
@@ -37,14 +39,16 @@ public:
         center_y = (float)_center_y;
         attractor_type = _type;
         for (int i = 0; i < numLines; i++) {
+            // Generate random values if we have lots of lines
             if (_type == Type::FixedPoint) {
-                if (i % 2 == 0)
-                    c_positions.push_back({ 100.0f, 200.0f + i * 5, 0.0f });
-                else
-                    c_positions.push_back({ -100.0f, -200.0f - (i - 1) * 5, 0.0f });
+                float randomX = (float)(rand() % 600) - 300;
+                float randomY = (float)(rand() % 600) - 300;
+                c_positions.push_back({ randomX, randomY, 0.0f });
             }
             else if (_type == Type::Lorenz) {
-                c_positions.push_back({ 0.01f + (i * 2.0f), 0.0f, 0.0f + (i * 5.0f) });
+                float randomX = (float)(rand() % 10) - 5;
+                float randomZ = (float)(rand() % 10) - 5;
+                c_positions.push_back({ 0.01f + randomX, 0.0f, randomZ });
             }
             
             verticeList.push_back({});
@@ -83,8 +87,8 @@ protected:
 private:
     void update_lorenz() {
         // Messing around with changing a value.
-        a += 0.001;
-        std::cout << a << std::endl;
+        a += 0.01;
+        // std::cout << a << std::endl;
         for (int i = 0; i < c_positions.size(); i++) {
             // Update our position
             float dx = (a * (c_positions[i].y - c_positions[i].x)) * dt;
@@ -95,7 +99,7 @@ private:
             c_positions[i].y += dy;
             c_positions[i].z += dz;
 
-            time += dt;
+            c_time += dt;
 
             // std::cout << "(" << c_positions[i] << ") Time: " << time << std::endl;
 
@@ -108,7 +112,7 @@ private:
 
     void update_fixed_point() {
         for (int i = 0; i < c_positions.size(); i++) {
-            float fixed_a = 0.1f;
+            float fixed_a = 0.4f;
             float fixed_b = 0.4f;
 
             // Update our position
@@ -118,7 +122,7 @@ private:
             c_positions[i].x += dx;
             c_positions[i].y += dy;
 
-            time += dt;
+            c_time += dt;
 
             // std::cout << "(" << c_pos << ") Time: " << time << std::endl;
 
@@ -132,8 +136,9 @@ private:
 
 int main()
 {   
+    srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(600, 600), "Lorenz Attractor");
-    Attractor lorenz(Attractor::Type::Lorenz, 300, 500, 20);
+    Attractor lorenz(Attractor::Type::Lorenz, 300, 500, 200);
 
     window.setFramerateLimit(60);
 
