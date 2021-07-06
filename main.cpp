@@ -21,6 +21,7 @@ public:
     float a = 5;
     float b = 28;
     float c = 8.0f / 3.0f;
+    bool removeTrails = false;
 
     enum Type {
         Lorenz = 0, FixedPoint
@@ -34,10 +35,11 @@ private:
     sf::RenderWindow window;
 
 public:
-    Attractor(Type _type, int _center_x, int _center_y, int numLines) {
+    Attractor(Type _type, int _center_x, int _center_y, int numLines, bool _rTrails) {
         center_x = (float)_center_x;
         center_y = (float)_center_y;
         attractor_type = _type;
+        removeTrails = _rTrails;
         for (int i = 0; i < numLines; i++) {
             // Generate random values if we have lots of lines
             if (_type == Type::FixedPoint) {
@@ -57,9 +59,11 @@ public:
 
     void update() {
         
-        if (verticeList[0].size() > 100) {
-            for (int i = 0; i < verticeList.size(); i++) {
-                verticeList[i].erase(verticeList[i].begin(), verticeList[i].begin() + 1);
+        if (removeTrails) {
+            if (verticeList[0].size() > 100) {
+                for (int i = 0; i < verticeList.size(); i++) {
+                    verticeList[i].erase(verticeList[i].begin(), verticeList[i].begin() + 1);
+                }
             }
         }
         
@@ -138,7 +142,7 @@ int main()
 {   
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(600, 600), "Lorenz Attractor");
-    Attractor lorenz(Attractor::Type::Lorenz, 300, 500, 200);
+    Attractor lorenz(Attractor::Type::FixedPoint, 300, 300, 200, false);
 
     window.setFramerateLimit(60);
 
