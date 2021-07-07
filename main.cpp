@@ -4,8 +4,21 @@
 #include <cstdlib>
 #include <ctime>
 
-struct Position {
+class Position {
+public:
     float x, y, z;
+public:
+    Position(float x, float y, float z)
+        : x(x), y(y), z(z)
+    {
+
+    }
+
+    Position(const Position& position)
+        : x(position.x), y(position.y), z(position.z)
+    {
+        std::cout << "copied!" << std::endl;
+    }
 };
 
 std::ostream& operator<<(std::ostream& stream, const Position& vertex)
@@ -40,17 +53,21 @@ public:
         center_y = (float)_center_y;
         attractor_type = _type;
         removeTrails = _rTrails;
+
+        verticeList.reserve(numLines);
+        c_positions.reserve(numLines);
+
         for (int i = 0; i < numLines; i++) {
             // Generate random values if we have lots of lines
             if (_type == Type::FixedPoint) {
                 float randomX = (float)(rand() % 600) - 300;
                 float randomY = (float)(rand() % 600) - 300;
-                c_positions.push_back({ randomX, randomY, 0.0f });
+                c_positions.emplace_back( randomX, randomY, 0.0f );
             }
             else if (_type == Type::Lorenz) {
                 float randomX = (float)(rand() % 10) - 5;
                 float randomZ = (float)(rand() % 10) - 5;
-                c_positions.push_back({ 0.01f + randomX, 0.0f, randomZ });
+                c_positions.emplace_back( 0.01f + randomX, 0.0f, randomZ );
             }
             
             verticeList.push_back({});
@@ -142,7 +159,7 @@ int main()
 {   
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(600, 600), "Lorenz Attractor");
-    Attractor lorenz(Attractor::Type::FixedPoint, 300, 300, 200, false);
+    Attractor lorenz(Attractor::Type::Lorenz, 300, 500, 200, true);
 
     window.setFramerateLimit(60);
 
